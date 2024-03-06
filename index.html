@@ -1,0 +1,471 @@
+<html lang="es">
+<head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Canvas Test</title>
+      <!--<link rel="stylesheet" href="style.css">-->
+
+      <style>
+        :root{
+
+            --textColor:#F0F3FF;
+            --backgroundColor:#0A1D56;
+            --backgroundDiv:#492E87;
+            --importantText:#37B5B6;
+            --highlightText:#F2F597;
+        }
+
+        @font-face{
+
+            font-family: Fredoka;
+            font-optical-sizing: auto;
+            font-style: normal;
+            src: url(./Fredoka_font.ttf);
+            }
+        *{
+            padding: 0%;
+            font-family: 'Fredoka', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            font-stretch: semi-expanded;
+            color: var(--textColor);
+
+        }
+
+        h1,h2,h3,h4,h5,h6{
+            color: var(--highlightText);
+        }
+
+        body {
+            margin-left: 7%;
+            flex-direction: column;
+            display: flex;
+            width: 80vw;
+            justify-content: center;
+            background: var(--backgroundColor);
+        }
+
+        div div {
+            margin: 0;
+        }
+
+        div {
+            margin: 10px;
+            width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            background-color: var(--backgroundDiv);
+            overflow: hidden;
+            box-shadow: 10px 10px 10px #0007;
+
+        }
+        .set_value, .info{
+            box-shadow: none;
+            display: flex;
+            align-content: center;
+            justify-content: space-around;
+        }
+
+        input {
+            color: var();
+            background-color: #0000;
+        }
+
+        .header, .game{
+            margin: 15px;
+        }
+
+        .notes_text{
+            margin-left: 20px;
+            font-size: 30px;
+            background-color: #0000;
+            border-color: #0000;
+            outline: none;
+            border: none;
+            border-bottom: 5px solid var(--highlightText);
+            width: 25%;
+            overflow: visible;
+
+        }
+        .button {
+            color: var(--backgroundColor);
+            background-color: var(--importantText);
+            padding: 5px;
+            border-radius: 5px;
+            font-size: large;
+            font-weight: bold;
+        }
+        .ui{
+            width: 100%;
+            display: flex;
+            align-items: baseline;
+            flex-direction: row;
+            justify-content: space-evenly;
+        }
+
+        #canvasObject{
+            border: 5px solid var(--textColor);
+            border-radius: 20px;
+        } 
+        .special {
+            background-color: #0000;
+            box-shadow:none;
+            display:flex;
+            flex-wrap: nowrap;
+            flex-direction: row;
+            align-content: flex-start;
+            justify-content: space-around;
+            align-items: stretch;
+        }
+
+      </style>
+</head>
+<body>
+    <div class="special">
+
+        <div class="header">
+            <h1>Buscaminas</h1>
+            <h2>Por: <i>RBW</i></h2>
+            <h3 id="debug">Debug:</h3>
+        </div>
+    
+        
+    
+        <div class="header">
+            <h3>Modificar Juego:</h3>
+            <div class="set_value">
+                <label for="action">Ingrese el tamaño del Tablero: </label>
+                <input id="action" class="notes_text" type="number" min="10" max="50" value="10">
+            </div>
+            <div class="set_value">
+                <label for="dificulty">Ingrese La dificultad del tablero: </label>
+                <input id="dificulty" class="notes_text" type="number" min="10" max="50" value="20">
+            </div>
+            <input type="button" value="Crear Juego" class="button">
+        </div>
+
+    </div>
+    
+
+    <div class="game">
+
+        <div>
+            <div class="special">
+                <h3 id="tiempo">Tiempo: 00:00</h3>
+                <input type="text" value="Player1" id="username" class="notes_text">
+            </div>
+            <div class="special">
+                <input type="button" value="Hago Algo 😎" class="button" id="beingDraw" onclick="pintarTablero()">
+                <input type="button"  value="Cambiar a Poner Bandera" class="button" id="banderaBoton" onclick="cambiarBandera()">
+            </div>
+            
+        </div>
+
+        
+        <div class="set_value">
+            <canvas id="canvasObject" width="900" height="900" ></canvas>
+        </div>
+    </div>
+
+
+    <script>
+            const elementDebug = document.getElementById("debug")
+            const canvas = document.getElementById("canvasObject")
+            const inputLabel = document.getElementById("action")
+            
+
+            let numColumnas = 1;
+            let numFilas = 1;
+            let tam = 1;
+            let startTime;
+            let tableroGame;
+            let puntaje;
+            let gameRunning = false;
+            let quierePonerBandera = false
+
+            //colores
+
+            /* 
+            --textColor:#F0F3FF;
+            --backgroundColor:#0A1D56;
+            --backgroundDiv:#492E87;
+            --importantText:#37B5B6;
+            --highlightText:#F2F597;
+            */
+            const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--textColor');
+            const bombColor = getComputedStyle(document.documentElement).getPropertyValue('--backgroundColor');
+            const flagColor = getComputedStyle(document.documentElement).getPropertyValue('--highlightText');
+            const numberColor = getComputedStyle(document.documentElement).getPropertyValue('--importantText');
+
+
+            function pintarTablero(){
+
+
+
+                  tam = Number(inputLabel.value)
+                  if (tam == 0){
+                        alert("Do Nothing!!! no divide 0")
+                        return;
+                  }
+                  initTime();
+                  const ctx = canvas.getContext('2d');
+
+
+                  ctx.clearRect(0,0,canvas.width,canvas.height)
+
+
+                  createGame(tam)
+
+
+                  numColumnas = Math.trunc(canvas.width/tam)
+                  numFilas = Math.trunc(canvas.height/tam)
+
+                  for (var cont=0 ; cont<=tam; cont++){
+                        ctx.beginPath();
+                        ctx.strokeStyle = lineColor
+                        ctx.moveTo(cont*numColumnas,0)
+                        ctx.lineTo(cont*numColumnas,canvas.width)
+                        ctx.moveTo(0,cont*numFilas)
+                        ctx.lineTo(canvas.height,cont*numFilas)
+
+                        ctx.stroke();
+
+                        // test code
+
+                  }
+
+                  for (var x=0 ; x<tam; x++){
+                        for (var y=0; y<tam; y++){
+                              if (tableroGame[(tam*y)+x]){
+                                    pintarMina(x,y)
+                              }
+                        }
+                  }
+
+                  printLog("Filas Tam: "+numFilas+ " Columnas Tam" + numColumnas)
+
+            }
+
+            function initTime(){
+                startTime = new Date().getTime();
+                console.log(startTime)
+
+                setInterval(function(){
+                    const segundosInput = document.getElementById("tiempo");
+                    const currentTime = new Date().getTime();
+                    const segundosTrancurridos = (Math.floor((currentTime - startTime)/1000))%60;
+                    const minutosTranscurridos = Math.floor((currentTime - startTime)/60000)
+                    segundosInput.textContent = "Tiempo: "+ String(minutosTranscurridos).padStart(2, '0') + ":" + String(segundosTrancurridos).padStart(2, '0');
+                },1000)
+            }
+
+            function cambiarBandera() {
+
+                quierePonerBandera = !quierePonerBandera;
+
+
+                if (quierePonerBandera) {
+                    document.getElementById("banderaBoton").value = "Cambiar a Borrar Espacios"
+                } else {
+                    document.getElementById("banderaBoton").value = "Cambiar a Poner Bandera"
+                }
+
+                console.log(quierePonerBandera)
+            }
+
+            function pintarBandera(position_x,position_y){
+                  // donde position_x = 0,1,2,3...,n
+
+
+                  const tam = Number(inputLabel.value)
+                  const ctx = canvas.getContext('2d');
+
+
+                  const position_x_real = position_x * numFilas
+                  const position_y_real = position_y * numColumnas
+
+
+                  ctx.beginPath();
+
+                  ctx.strokeStyle = flagColor
+                  ctx.moveTo(position_x_real+(numFilas*0.3),position_y_real+(numColumnas*0.8))
+                  ctx.lineTo(position_x_real+(numFilas*0.3),position_y_real+(numColumnas*0.2))
+                  ctx.lineTo(position_x_real+(numFilas*0.7),position_y_real+(numColumnas*0.35))
+                  ctx.lineTo(position_x_real+(numFilas*0.3),position_y_real+(numColumnas*0.5))
+
+                  ctx.stroke();
+
+            }
+
+            function pintarMina(position_x,position_y){
+
+                  const ctx = canvas.getContext('2d');
+
+
+                  const numColumnas = Math.trunc(canvas.width/tam)
+                  const numFilas = Math.trunc(canvas.height/tam)
+
+                  const position_x_real = position_x * numFilas
+                  const position_y_real = position_y * numColumnas
+
+                  ctx.beginPath();
+                  ctx.fillStyle = bombColor
+
+                  // bola
+                  ctx.arc(position_x_real+(numFilas*0.5),position_y_real+(numColumnas*0.6),numFilas*.3,0,2*Math.PI)
+
+                  // cubito de arriba
+                  ctx.moveTo(position_x_real+(numFilas*0.35),position_y_real+(numColumnas*0.35))
+                  ctx.lineTo(position_x_real+(numFilas*0.35),position_y_real+(numColumnas*0.25))
+                  ctx.lineTo(position_x_real+(numFilas*0.65),position_y_real+(numColumnas*0.25))
+                  ctx.lineTo(position_x_real+(numFilas*0.65),position_y_real+(numColumnas*0.35))
+
+                  // mechita Derecha
+                  ctx.moveTo(position_x_real+(numFilas*0.55),position_y_real+(numColumnas*0.25))
+                  ctx.quadraticCurveTo(position_x_real+(numFilas*0.53), position_y_real+(numColumnas*0.19), position_x_real+(numFilas*0.45),position_y_real+(numColumnas*0.15))
+                  ctx.quadraticCurveTo(position_x_real+(numFilas*0.37),position_y_real+(numColumnas*0.23), position_x_real+(numFilas*0.35),position_y_real+(numColumnas*0.15))
+
+                  // mechita izquierda
+                  ctx.moveTo(position_x_real+(numFilas*0.45),position_y_real+(numColumnas*0.25))
+                  ctx.quadraticCurveTo(position_x_real+(numFilas*0.47), position_y_real+(numColumnas*0.19), position_x_real+(numFilas*0.45),position_y_real+(numColumnas*0.20))
+                  ctx.quadraticCurveTo(position_x_real+(numFilas*0.37),position_y_real+(numColumnas*0.27), position_x_real+(numFilas*0.31),position_y_real+(numColumnas*0.20))
+
+                  // cerrar mechita
+                  ctx.lineTo(position_x_real+(numFilas*0.35), position_y_real+(numColumnas*0.15))
+                  ctx.stroke();
+            }
+
+            function pintarRectangulo(){
+                  ctx.beginPath();
+                  ctx.rect(20,20,350,150);
+                  ctx.fillStyle = '#f00';
+                  ctx.fill();
+            }
+
+            function getMousePos(evt){
+                  var rect = canvas.getBoundingClientRect();
+                  return{
+                        x: evt.clientX - rect.left,
+                        y: evt.clientY - rect.top
+                  }
+            }
+
+            window.oncontextmenu = function ()
+            {
+                return false;     // cancel default menu
+            }
+
+            canvas.addEventListener("onclick",function(event){
+                // escucha click derecho
+
+                var isRightMB;
+                event = event || window.event;
+
+                if ("which" in event)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+                    isRightMB = event.which == 3;
+                else if ("button" in event)  // IE, Opera
+                    isRightMB = event.button == 2;
+
+                alert("Right mouse button " + (isRightMB ? "" : " was not") + "clicked!");
+            })
+
+            canvas.addEventListener("click",function(event){
+                console.log(event)
+
+
+                  const pos = getMousePos(event);
+
+                  const position_x = Math.trunc(pos.x/numFilas);
+                  const position_y = Math.trunc(pos.y/numColumnas);
+                  console.log(pos.x/numFilas + " " + pos.y/numColumnas)
+                  printLog(pos.x+ " " + pos.y +" - "+position_x+" "+position_y)
+
+                  // checamos si hay bomba
+                  if (tableroGame[(tam*position_y) + position_x]) {
+                    alert("geim over :c")
+                    return
+                  }
+
+                  if (quierePonerBandera) {
+                    pintarBandera(position_x,position_y)
+                  } else {
+                    const numPintar = bombsAround(position_x,position_y) // numero pintar
+                    pintarNumero(position_x,position_y,numPintar)
+                }
+
+
+
+                  // do things
+            })
+
+            function createGame(size){
+                tableroGame = new Array(size*size)
+
+                  for (var x=0 ; x<size; x++){
+                        for (var y=0; y<size; y++){
+                              if (Math.random() > 0.8){
+                                    tableroGame[(y*size)+x] = true;
+
+                              }else{
+                                    tableroGame[(y*size)+x] = false;
+                              }
+                        }
+                  }
+
+                console.log(tableroGame)
+
+            }
+
+            function pintarNumero(position_x,position_y,num) {
+                position_y++
+                const ctx = canvas.getContext('2d');
+
+
+
+                const numColumnas = Math.trunc(canvas.width/tam)
+                const numFilas = Math.trunc(canvas.height/tam)
+
+                const position_x_real = position_x * numFilas
+                const position_y_real = position_y * numColumnas
+
+                ctx.beginPath();
+                ctx.font = numColumnas +"px Arial"
+                ctx.fillStyle = numberColor
+                ctx.fillText(" "+num+" ",position_x_real,position_y_real)
+
+            }
+
+            function bombsAround(x,y) {
+                // ejemplo de una cuadricula 0,1,2 - 0,1,2 se selecciona 1 y 1
+                // buscar en 0,0    0,1     0,2     1,0     1,2     2,0 2,1 2,2
+                // const tam
+                let manyBombs = 0;
+
+                for (let idX = -1; idX < 2; idX++) {
+                    console.log("x=" + (x+idX))
+
+                    if (x+idX < 0 || x+idX > tam) {
+                        continue;
+                    }
+
+                    for (let idY = -1; idY < 2; idY++) {
+                        console.log("y=" + (y+idY))
+
+                        if (tableroGame[((y+idY)*tam)+(x+idX)] && !(y+idY < 0 || y+idY > tam)) {
+                            manyBombs++
+                            console.log("yes on: "+(x+idX) + "-" + (y+idY) )
+                        }
+                    }
+                }
+
+                console.log(manyBombs)
+
+                return manyBombs
+            }
+
+            function printLog(log){ // facilitar ver el log en dispositivo sin Consola
+                  elementDebug.textContent = "Debug: " + log
+            }
+
+      </script>
+</body>
+</html>
